@@ -1,0 +1,8 @@
+
+Programme qui produit un fichier MIDI à partir d'une chaîne de caractères suivant la syntaxe de la commande PLAY de QBasic.
+
+https://www.qb64.org/wiki/PLAY
+
+La version originale (en Basic) a été proposée par un utilisateur du forum freebasic.net.
+
+https://www.freebasic.net/forum/viewtopic.php?p=248014#p248014
