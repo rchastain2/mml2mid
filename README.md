@@ -1,10 +1,8 @@
 # mml2mid
 
-Program converting MML music to MIDI file.
+Convert QBasic-style MML to MIDI file.
 
 Pascal version of a [FreeBASIC program](https://www.freebasic.net/forum/viewtopic.php?p=248014#p248014) by [angros47](https://www.freebasic.net/forum/memberlist.php?mode=viewprofile&u=177).
-
-MML is a notation supported by the PLAY command of QBasic (for example).
 
 ## Usage
 
