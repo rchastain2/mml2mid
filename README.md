@@ -51,8 +51,7 @@ end.
 
 ## Links
 
-  * [beepy](https://github.com/vdust/beepy.git)
-  * [GBA MML Music Player](https://github.com/inucat/gba-mml-music-player.git)
-  * [MML Player](https://github.com/captainys/MMLPlayer)
-  * [FreeBASIC sfx library](https://sourceforge.net/projects/freebasic-sfx-library/)
-  * [FreeBASIC sfx library examples](https://codeberg.org/rchastain/fbsfx-library-examples)
+  * [beepy](https://github.com/rchastain2/beepy)
+  * [C++ MML Player with YM2612 Emulator](https://github.com/captainys/MMLPlayer)
+  * [mml2mid (FreeBASIC)](https://codeberg.org/rchastain/fbsfx-library-examples)
+  * [sakuramml](https://github.com/kujirahand/sakuramml)
