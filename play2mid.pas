@@ -6,7 +6,7 @@ unit Play2Mid;
 interface
 
 uses
-  SysUtils;
+  SysUtils, Math;
 
 type
   TPlay2Mid = class
@@ -89,7 +89,7 @@ var
   octave: byte = 4;
   volume: byte = 127;
   note_stack: array[0..128] of byte;
-  chord: byte;
+  chord: byte = 0;
   next_event: double = 0;
   duration: double;
   pause: double;
@@ -102,7 +102,7 @@ var
   i: integer;
 begin
   result := '';
-  Initialize(note_stack);
+  FillChar(note_stack, SizeOf(note_stack), 0);
   while p <= Length(playstr) do
   begin
     ch := LowerCase(playstr[p]);
@@ -120,9 +120,9 @@ begin
         else
           tch := #0;
       end;
-      idx := StrToIntDef(number, 0);
+      idx := EnsureRange(StrToIntDef(number, 0), 0, 127);
       if idx = 0 then
-        next_event := next_event + 60 / tempo * (4 / note_len) / 60
+        next_event := next_event + 60 / tempo * (4 / note_len)
       else
       begin
         duration := 60 / tempo * (4 / note_len);
@@ -162,7 +162,7 @@ begin
         duration := duration * 4 / StrToInt(number);
       if ch = '.' then
         duration := duration * 1.5;
-      idx := 12 * octave + _fbplay_internal_translateNote(toTranslate);
+      idx := EnsureRange(12 * octave + _fbplay_internal_translateNote(toTranslate), 0, 127);
       result := result + WriteVarLen({Trunc}Round(240 * next_event)) + Chr($90 + channel) + Chr(idx) + Chr(volume);
       next_event := duration * (1 - note_len_mod);
       Inc(note_stack[0]);
@@ -188,11 +188,11 @@ begin
     end else
     if ch = '>' then
     begin
-      if octave < 7 then Inc(octave);
+      if octave < 6 then Inc(octave);
     end else
     if ch = '<' then
     begin
-      if octave > 1 then Dec(octave);
+      if octave > 0 then Dec(octave);
     end else
     if ch = 'o' then
     begin
@@ -207,7 +207,7 @@ begin
         else
           ch := #0;
       end;
-      octave := StrToIntDef(number, octave);
+      octave := EnsureRange(StrToIntDef(number, octave), 0, 6);
     end else
     if ch = 't' then
     begin
@@ -261,7 +261,7 @@ begin
           ch := #0;
       end;
       if number <> '' then
-        result := result + WriteVarLen(0) + Chr($C0 + channel) + Chr(StrToInt(number));
+        result := result + WriteVarLen(0) + Chr($C0 + channel) + Chr(EnsureRange(StrToInt(number), 0, 127));
     end else
     if ch = 'v' then
     begin
@@ -276,7 +276,7 @@ begin
         else
           ch := #0;
       end;
-      volume := StrToIntDef(number, volume);
+      volume := EnsureRange(StrToIntDef(number, volume), 0, 127);
     end else
     if ch = '{' then
     begin
