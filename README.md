@@ -19,7 +19,7 @@ O3 L2 C G,
 O2 L1 C
 ```
 
-There are beautiful Bach transcriptions in [samples-beepy](samples-beepy) folder (coming from the [beepy](https://github.com/vdust/beepy.git) project).
+There are beautiful Bach transcriptions in [samples-beepy](samples-beepy) folder (coming from the [beepy](https://github.com/vdust/beepy) project).
 
 ## Compilation
 
@@ -60,7 +60,7 @@ end.
 
 ## Links
 
-  * [beepy](https://github.com/rchastain2/beepy)
+  * [beepy](https://github.com/vdust/beepy)
   * [C++ MML Player with YM2612 Emulator](https://github.com/captainys/MMLPlayer)
   * [mml2mid (FreeBASIC)](https://codeberg.org/rchastain/fbsfx-library-examples)
   * [sakuramml](https://github.com/kujirahand/sakuramml)

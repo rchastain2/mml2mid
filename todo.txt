@@ -51,6 +51,9 @@ Conception
 Dépôt
 =====
 
-[ ] Commiter ou annuler les changements en cours (Makefile, sarabande.*,
+[x] Commiter ou annuler les changements en cours (Makefile, sarabande.*,
     gigue.mid et prelude.mid supprimés, .gitignore non suivi).
-[ ] README : un seul lien vers beepy (vdust en haut, rchastain2 en bas).
+[x] README : un seul lien vers beepy (vdust en haut, rchastain2 en bas).
+[ ] Régénérer les fichiers MIDI suivis (chaconne, double, mario, presto,
+    sarabande) : ils viennent de la version d'origine (120 ticks par
+    noire, octaves et articulation d'avant les corrections).
