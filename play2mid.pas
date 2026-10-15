@@ -85,7 +85,7 @@ function TPlay2Mid._fbplay_internal(channel: byte; playstr: string): string;
 var
   tempo: integer = 120;
   note_len: byte = 4;
-  note_len_mod: double = 1;
+  note_len_mod: double = 7 / 8;
   octave: byte = 4;
   volume: byte = 127;
   note_stack: array[0..128] of byte;
@@ -120,7 +120,9 @@ begin
         else
           tch := #0;
       end;
-      idx := EnsureRange(StrToIntDef(number, 0), 0, 127);
+      idx := EnsureRange(StrToIntDef(number, 0), 0, 84);
+      if idx > 0 then
+        idx := idx + 11;
       if idx = 0 then
         next_event := next_event + 60 / tempo * (4 / note_len)
       else
@@ -162,7 +164,7 @@ begin
         duration := duration * 4 / StrToInt(number);
       if ch = '.' then
         duration := duration * 1.5;
-      idx := EnsureRange(12 * octave + _fbplay_internal_translateNote(toTranslate), 0, 127);
+      idx := EnsureRange(12 * (octave + 1) + _fbplay_internal_translateNote(toTranslate), 0, 127);
       result := result + WriteVarLen({Trunc}Round(240 * next_event)) + Chr($90 + channel) + Chr(idx) + Chr(volume);
       next_event := duration * (1 - note_len_mod);
       Inc(note_stack[0]);

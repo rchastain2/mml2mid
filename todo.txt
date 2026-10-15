@@ -25,8 +25,10 @@ Bugs à la lecture du code
 Écarts avec QBasic
 ==================
 
-[ ] Articulation par défaut legato (note_len_mod = 1) au lieu de MN (7/8).
-[ ] O4 C donne la note MIDI 48 : vérifier la convention d'octave de QBasic.
+[x] Articulation par défaut legato (note_len_mod = 1) au lieu de MN (7/8).
+[x] O4 C donne la note MIDI 48 : vérifier la convention d'octave de QBasic.
+    Choix : O4 C = do central (MIDI 60), comme beepy ; N1 = O0 C (MIDI 12).
+    Le manuel de GW-BASIC place le do central au début de l'octave 3.
 
 Conception
 ==========
