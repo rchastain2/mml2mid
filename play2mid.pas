@@ -17,7 +17,7 @@ type
     destructor Destroy; override;
     procedure Play(const playstr: string; const playstr1: string = '');
   private
-    function _fbplay_internal_translateNote(toTranslate: string): byte;
+    function _fbplay_internal_translateNote(toTranslate: string): shortint;
     function _fbplay_internal(channel: byte; playstr: string): string;
   end;
 
@@ -56,7 +56,7 @@ begin
   result := Chr(Value and 255) + result;
 end;
 
-function TPlay2Mid._fbplay_internal_translateNote(toTranslate: string): byte;
+function TPlay2Mid._fbplay_internal_translateNote(toTranslate: string): shortint;
 begin
   if      toTranslate = 'c'  then result := 0
   else if toTranslate = 'cs' then result := 1
@@ -77,7 +77,8 @@ begin
   else if toTranslate = 'as' then result := 10
   else if toTranslate = 'bb' then result := 10
   else if toTranslate = 'b'  then result := 11
-  else if toTranslate = 'cb' then result := 11;
+  else if toTranslate = 'cb' then result := -1
+  else if toTranslate = 'bs' then result := 12;
 end;
 
 function TPlay2Mid._fbplay_internal(channel: byte; playstr: string): string;
@@ -91,6 +92,7 @@ var
   chord: byte;
   next_event: double = 0;
   duration: double;
+  pause: double;
   idx: byte;
   number: string;
   ch: char;
@@ -101,7 +103,7 @@ var
 begin
   result := '';
   Initialize(note_stack);
-  while p < Length(playstr) do
+  while p <= Length(playstr) do
   begin
     ch := LowerCase(playstr[p]);
     Inc(p);
@@ -118,7 +120,7 @@ begin
         else
           tch := #0;
       end;
-      idx := StrToInt(number);
+      idx := StrToIntDef(number, 0);
       if idx = 0 then
         next_event := next_event + 60 / tempo * (4 / note_len) / 60
       else
@@ -179,7 +181,10 @@ begin
         else
           ch := #0;
       end;
-      next_event := next_event + 60 / tempo * 4 / StrToInt(number);
+      pause := 60 / tempo * 4 / StrToIntDef(number, note_len);
+      if ch = '.' then
+        pause := pause * 1.5;
+      next_event := next_event + pause;
     end else
     if ch = '>' then
     begin
@@ -202,7 +207,7 @@ begin
         else
           ch := #0;
       end;
-      octave := StrToInt(number);
+      octave := StrToIntDef(number, octave);
     end else
     if ch = 't' then
     begin
@@ -217,7 +222,7 @@ begin
         else
           ch := #0;
       end;
-      tempo := StrToInt(number);
+      tempo := StrToIntDef(number, tempo);
     end else
     if ch = 'l' then
     begin
@@ -255,7 +260,8 @@ begin
         else
           ch := #0;
       end;
-      result := result + WriteVarLen(0) + Chr($C0 + channel) + Chr(StrToInt(number)); 
+      if number <> '' then
+        result := result + WriteVarLen(0) + Chr($C0 + channel) + Chr(StrToInt(number));
     end else
     if ch = 'v' then
     begin
@@ -270,7 +276,7 @@ begin
         else
           ch := #0;
       end;
-      volume := StrToInt(number);
+      volume := StrToIntDef(number, volume);
     end else
     if ch = '{' then
     begin

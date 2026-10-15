@@ -6,7 +6,7 @@ PC := fpc
 #PFLAGS := -Mobjfpc -Sh -gh
 PFLAGS := -Mobjfpc -Sh -g
 
-def: mml2mid
+default: mml2mid
 all: $(TARGETS)
 
 %: %.pas play2mid.pas

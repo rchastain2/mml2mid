@@ -6,7 +6,7 @@ uses
 ========================================================================
  Johann Sebastian Bach
  Sarabande from C Minor Cello Suite (BWV 1011)
- FreeBASIC version 20.09.2020
+ FreeBASIC version 26.04.2026
 ========================================================================
 *)
 
@@ -22,6 +22,6 @@ var
   
 begin
   p2m := TPlay2Mid.Create('sarabande.mid');
-  p2m.Play('T48' + A + B + A + B + C + D + E + C + D + E + 'P2.');
+  p2m.Play('T64' + A + B + A + B + C + D + E + C + D + E + 'P2.');
   p2m.Free;
 end.

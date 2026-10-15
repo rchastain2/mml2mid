@@ -1,0 +1,48 @@
+Bugs confirmés
+==============
+
+[x] Le dernier caractère de la chaîne est ignoré : while p < Length(playstr)
+    au lieu de <=. "CDE" ne produit que C et D.
+[x] B# (B+) : 'bs' manque dans _fbplay_internal_translateNote, le résultat
+    n'est pas défini (B+ donne C3 au lieu de C4).
+[x] C♭ (C-) donne le si de la même octave au lieu de celui de l'octave
+    inférieure (B3 au lieu de B2).
+[x] P, O, T, I, V, N sans nombre : StrToInt('') lève EConvertError.
+[x] Le point après une pause est ignoré : P2. dure une blanche.
+
+Bugs à la lecture du code
+=========================
+
+[ ] chord n'est pas initialisée.
+[ ] Initialize(note_stack) ne fait rien sur un tableau d'octets :
+    note_stack[0] part d'une valeur indéterminée.
+[ ] V, I et N ne sont pas bornés à 127.
+[ ] Pause N0 (ou N sans nombre) : la durée est divisée par 60 en trop
+    (60 / tempo * (4 / note_len) / 60), la pause est presque nulle.
+[ ] Octaves : la documentation annonce O0 à O6, mais > monte jusqu'à 7
+    et < s'arrête à 1.
+
+Écarts avec QBasic
+==================
+
+[ ] Articulation par défaut legato (note_len_mod = 1) au lieu de MN (7/8).
+[ ] O4 C donne la note MIDI 48 : vérifier la convention d'octave de QBasic.
+
+Conception
+==========
+
+[ ] Écrire un événement de tempo (FF 51) au lieu de convertir les durées
+    à 120 noires par minute ; calculer des positions absolues en ticks
+    pour éviter l'accumulation des arrondis.
+[ ] Remplacer les sept copies de la lecture d'un nombre par une fonction
+    ReadNumber, et la cascade de if de translateNote par un tableau.
+[ ] Plus de deux voix ; plusieurs voix dans mml2mid.
+[ ] Vérifier le résultat de FileCreate ; message d'erreur clair quand le
+    fichier d'entrée n'existe pas.
+
+Dépôt
+=====
+
+[ ] Commiter ou annuler les changements en cours (Makefile, sarabande.*,
+    gigue.mid et prelude.mid supprimés, .gitignore non suivi).
+[ ] README : un seul lien vers beepy (vdust en haut, rchastain2 en bas).
