@@ -17,7 +17,6 @@ type
     destructor Destroy; override;
     procedure Play(const playstr: string; const playstr1: string = '');
   private
-    function _fbplay_internal_translateNote(toTranslate: string): shortint;
     function _fbplay_internal(channel: byte; playstr: string): string;
   end;
 
@@ -56,30 +55,9 @@ begin
   result := Chr(Value and 255) + result;
 end;
 
-function TPlay2Mid._fbplay_internal_translateNote(toTranslate: string): shortint;
-begin
-  if      toTranslate = 'c'  then result := 0
-  else if toTranslate = 'cs' then result := 1
-  else if toTranslate = 'db' then result := 1
-  else if toTranslate = 'd'  then result := 2
-  else if toTranslate = 'ds' then result := 3
-  else if toTranslate = 'eb' then result := 3
-  else if toTranslate = 'e'  then result := 4
-  else if toTranslate = 'fb' then result := 4
-  else if toTranslate = 'f'  then result := 5
-  else if toTranslate = 'es' then result := 5
-  else if toTranslate = 'fs' then result := 6
-  else if toTranslate = 'gb' then result := 6
-  else if toTranslate = 'g'  then result := 7
-  else if toTranslate = 'gs' then result := 8
-  else if toTranslate = 'ab' then result := 8
-  else if toTranslate = 'a'  then result := 9
-  else if toTranslate = 'as' then result := 10
-  else if toTranslate = 'bb' then result := 10
-  else if toTranslate = 'b'  then result := 11
-  else if toTranslate = 'cb' then result := -1
-  else if toTranslate = 'bs' then result := 12;
-end;
+const
+  NoteOffsets: array['a'..'g'] of shortint = (9, 11, 0, 2, 4, 5, 7);
+  TicksPerQuarter = 480;
 
 function TPlay2Mid._fbplay_internal(channel: byte; playstr: string): string;
 var
@@ -89,19 +67,74 @@ var
   octave: byte = 4;
   volume: byte = 127;
   note_stack: array[0..128] of byte;
-  chord: byte = 0;
-  next_event: double = 0;
-  duration: double;
-  pause: double;
+  chord: boolean = false;
+  position: double = 0;
+  duration: double = 0;
+  last_tick: integer = 0;
+  track: string = '';
   idx: byte;
   number: string;
   ch: char;
-  tch: char;
-  toTranslate: string;
+  offset: shortint;
   p: integer = 1;
-  i: integer;
+
+  function NextChar: char;
+  begin
+    if p <= Length(playstr) then
+      result := playstr[p]
+    else
+      result := #0;
+  end;
+
+  function ReadNumber: string;
+  begin
+    result := '';
+    while NextChar in ['0'..'9'] do
+    begin
+      result := result + playstr[p];
+      Inc(p);
+    end;
+  end;
+
+  function ReadLength: double;
+  var
+    n: integer;
+  begin
+    n := StrToIntDef(ReadNumber, 0);
+    if n = 0 then
+      n := note_len;
+    result := 4 / n;
+  end;
+
+  procedure Emit(const atime: double; const adata: string);
+  var
+    tick: integer;
+  begin
+    tick := Max(Round(atime * TicksPerQuarter), last_tick);
+    track := track + WriteVarLen(tick - last_tick) + adata;
+    last_tick := tick;
+  end;
+
+  procedure NoteOn(const akey: byte);
+  begin
+    Emit(position, Chr($90 + channel) + Chr(akey) + Chr(volume));
+    Inc(note_stack[0]);
+    note_stack[note_stack[0]] := akey;
+  end;
+
+  procedure ReleaseNotes;
+  var
+    i: integer;
+  begin
+    if note_stack[0] = 0 then
+      Exit;
+    for i := 1 to note_stack[0] do
+      Emit(position + duration * note_len_mod, Chr($80 + channel) + Chr(note_stack[i]) + Chr(0));
+    note_stack[0] := 0;
+    position := position + duration;
+  end;
+
 begin
-  result := '';
   FillChar(note_stack, SizeOf(note_stack), 0);
   while p <= Length(playstr) do
   begin
@@ -109,84 +142,37 @@ begin
     Inc(p);
     if ch = 'n' then
     begin
-      number := '';
-      tch := playstr[p];
-      while (Ord(tch) >= 48) and (Ord(tch) <= 57) do
-      begin
-        number := number + tch;
-        Inc(p);
-        if p <= Length(playstr) then
-          tch := playstr[p]
-        else
-          tch := #0;
-      end;
-      idx := EnsureRange(StrToIntDef(number, 0), 0, 84);
-      if idx > 0 then
-        idx := idx + 11;
+      idx := EnsureRange(StrToIntDef(ReadNumber, 0), 0, 84);
+      duration := 4 / note_len;
       if idx = 0 then
-        next_event := next_event + 60 / tempo * (4 / note_len)
+        position := position + duration
       else
-      begin
-        duration := 60 / tempo * (4 / note_len);
-        result := result + WriteVarLen({Trunc}Round(240 * next_event)) + Chr($90 + channel) + Chr(idx) + Chr(volume);
-        next_event := duration * (1 - note_len_mod);
-        Inc(note_stack[0]);
-        note_stack[note_stack[0]] := idx;
-      end;
+        NoteOn(idx + 11);
     end else
     if ch in ['a'..'g'] then
     begin
-      duration := 60 / tempo * (4 / note_len);
-      toTranslate := ch;
-      number := '';
-      ch := playstr[p];
-      if ch = '-' then
+      offset := NoteOffsets[ch];
+      if NextChar = '-' then
       begin
-        toTranslate := toTranslate + 'b';
+        Dec(offset);
         Inc(p);
       end else
-        if (ch = '+') or (ch = '#') then
+        if NextChar in ['+', '#'] then
         begin
-          toTranslate := toTranslate + 's';
+          Inc(offset);
           Inc(p);
         end;
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      if StrToIntDef(number, 0) <> 0 then
-        duration := duration * 4 / StrToInt(number);
-      if ch = '.' then
+      duration := ReadLength;
+      if NextChar = '.' then
         duration := duration * 1.5;
-      idx := EnsureRange(12 * (octave + 1) + _fbplay_internal_translateNote(toTranslate), 0, 127);
-      result := result + WriteVarLen({Trunc}Round(240 * next_event)) + Chr($90 + channel) + Chr(idx) + Chr(volume);
-      next_event := duration * (1 - note_len_mod);
-      Inc(note_stack[0]);
-      note_stack[note_stack[0]] := idx;
+      NoteOn(EnsureRange(12 * (octave + 1) + offset, 0, 127));
     end else
     if ch = 'p' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      pause := 60 / tempo * 4 / StrToIntDef(number, note_len);
-      if ch = '.' then
-        pause := pause * 1.5;
-      next_event := next_event + pause;
+      duration := ReadLength;
+      if NextChar = '.' then
+        duration := duration * 1.5;
+      position := position + duration;
     end else
     if ch = '>' then
     begin
@@ -198,52 +184,20 @@ begin
     end else
     if ch = 'o' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      octave := EnsureRange(StrToIntDef(number, octave), 0, 6);
+      octave := EnsureRange(StrToIntDef(ReadNumber, octave), 0, 6);
     end else
     if ch = 't' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      tempo := StrToIntDef(number, tempo);
+      tempo := EnsureRange(StrToIntDef(ReadNumber, tempo), 32, 255);
+      Emit(position, Chr($FF) + Chr($51) + Chr(3) + Copy(WriteFourBytes(60000000 div tempo), 2, 3));
     end else
     if ch = 'l' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      note_len := StrToIntDef(number, 1);
+      note_len := Max(StrToIntDef(ReadNumber, 1), 1);
     end else
     if ch = 'm' then
     begin
-      ch := LowerCase(playstr[p]);
+      ch := LowerCase(NextChar);
       Inc(p);
       if ch = 's' then note_len_mod := 3 / 4;
       if ch = 'n' then note_len_mod := 7 / 8;
@@ -251,55 +205,26 @@ begin
     end else
     if ch = 'i' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
+      number := ReadNumber;
       if number <> '' then
-        result := result + WriteVarLen(0) + Chr($C0 + channel) + Chr(EnsureRange(StrToInt(number), 0, 127));
+        Emit(position, Chr($C0 + channel) + Chr(EnsureRange(StrToInt(number), 0, 127)));
     end else
     if ch = 'v' then
     begin
-      number := '';
-      ch := playstr[p];
-      while (Ord(ch) >= 48) and (Ord(ch) <= 57) do
-      begin
-        number := number + ch;
-        Inc(p);
-        if p <= Length(playstr) then
-          ch := playstr[p]
-        else
-          ch := #0;
-      end;
-      volume := EnsureRange(StrToIntDef(number, volume), 0, 127);
+      volume := EnsureRange(StrToIntDef(ReadNumber, volume), 0, 127);
     end else
     if ch = '{' then
     begin
-      chord := 1;
+      chord := true;
     end else
     if ch = '}' then
     begin
-      chord := 0;
+      chord := false;
     end;
-    if chord > 0 then
-      if chord = 2 then next_event := 0 else chord := 2
-    else
-    begin
-      for i := 1 to note_stack[0] do
-      begin
-        result := result + WriteVarLen({Trunc}Round(240 * duration * note_len_mod)) + Chr($80 + channel) + Chr(note_stack[i]) + Chr(0);
-        duration := 0;
-      end;
-      note_stack[0] := 0;
-    end;
+    if not chord then
+      ReleaseNotes;
   end;
+  result := track;
 end;
 
 procedure TPlay2Mid.Play(const playstr: string; const playstr1: string = '');
@@ -324,11 +249,17 @@ begin
     Inc(Tracks);
   end;
   
-  Midi := 'MThd' + Chr(0) + Chr(0) + Chr(0) + Chr(6) + Chr(0) + Chr(Ord(Tracks > 1)) + Chr(0) + Chr(Tracks) + Chr(0) + Chr(120) + Midi;
+  Midi := 'MThd' + Chr(0) + Chr(0) + Chr(0) + Chr(6) + Chr(0) + Chr(Ord(Tracks > 1)) + Chr(0) + Chr(Tracks) + Chr(TicksPerQuarter shr 8) + Chr(TicksPerQuarter and 255) + Midi;
   
   F := FileCreate(FFileName);
-  FileWrite(F, Midi[1], Length(Midi));
-  FileClose(F);
+  if F = -1 then
+    raise EInOutError.Create('Cannot create ' + FFileName);
+  try
+    if FileWrite(F, Midi[1], Length(Midi)) <> Length(Midi) then
+      raise EInOutError.Create('Cannot write ' + FFileName);
+  finally
+    FileClose(F);
+  end;
 end;
 
 end.
