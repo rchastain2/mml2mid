@@ -10,6 +10,15 @@ Pascal version of a [FreeBASIC program](https://www.freebasic.net/forum/viewtopi
 ./mml2mid sarabande.txt sarabande.mid
 ```
 
+Lines starting with `;` are comments. Voices are separated by commas; each voice is written to its own track and MIDI channel (channel 9, used for percussion, is skipped), up to 15 voices. The tempo (`T`) is taken from the first voice.
+
+```
+; Three voices
+T90 O4 L4 C E G >C,
+O3 L2 C G,
+O2 L1 C
+```
+
 There are beautiful Bach transcriptions in [samples-beepy](samples-beepy) folder (coming from the [beepy](https://github.com/vdust/beepy.git) project).
 
 ## Compilation

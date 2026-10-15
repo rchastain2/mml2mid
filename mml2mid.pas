@@ -38,7 +38,7 @@ begin
   try
     (* Create MIDI file *)
     try
-      p2m.Play(all);
+      p2m.PlayVoices(all.Split([',']));
     except
       on e: Exception do
       begin

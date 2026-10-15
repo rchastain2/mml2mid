@@ -41,7 +41,10 @@ Conception
 [x] Longueur propre à une note multipliée par la longueur L au lieu de la
     remplacer : avec L8, C4 durait une croche.
 [x] Après un accord, l'écart d'articulation (MN, MS) était perdu.
-[ ] Plus de deux voix ; plusieurs voix dans mml2mid.
+[x] Plus de deux voix ; plusieurs voix dans mml2mid.
+    Voix séparées par des virgules, une piste et un canal par voix
+    (le canal 9 est sauté), 15 voix au plus ; tempo pris dans la
+    première voix.
 [x] Vérifier le résultat de FileCreate ; message d'erreur clair quand le
     fichier d'entrée n'existe pas.
 

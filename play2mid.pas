@@ -16,8 +16,9 @@ type
     constructor Create(const AFileName: string);
     destructor Destroy; override;
     procedure Play(const playstr: string; const playstr1: string = '');
+    procedure PlayVoices(const AVoices: array of string);
   private
-    function _fbplay_internal(channel: byte; playstr: string): string;
+    function _fbplay_internal(channel: byte; playstr: string; tempomap: boolean): string;
   end;
 
 implementation
@@ -59,7 +60,7 @@ const
   NoteOffsets: array['a'..'g'] of shortint = (9, 11, 0, 2, 4, 5, 7);
   TicksPerQuarter = 480;
 
-function TPlay2Mid._fbplay_internal(channel: byte; playstr: string): string;
+function TPlay2Mid._fbplay_internal(channel: byte; playstr: string; tempomap: boolean): string;
 var
   tempo: integer = 120;
   note_len: byte = 4;
@@ -189,7 +190,8 @@ begin
     if ch = 't' then
     begin
       tempo := EnsureRange(StrToIntDef(ReadNumber, tempo), 32, 255);
-      Emit(position, Chr($FF) + Chr($51) + Chr(3) + Copy(WriteFourBytes(60000000 div tempo), 2, 3));
+      if tempomap then
+        Emit(position, Chr($FF) + Chr($51) + Chr(3) + Copy(WriteFourBytes(60000000 div tempo), 2, 3));
     end else
     if ch = 'l' then
     begin
@@ -228,29 +230,35 @@ begin
 end;
 
 procedure TPlay2Mid.Play(const playstr: string; const playstr1: string = '');
+begin
+  PlayVoices([playstr, playstr1]);
+end;
+
+procedure TPlay2Mid.PlayVoices(const AVoices: array of string);
 var
   Tracks: integer = 0;
   Midi, Track: string;
   F: longint;
+  i, channel: integer;
 begin
+  if Length(AVoices) > 15 then
+    raise EArgumentException.Create('Too many voices (15 at most)');
   Midi := '';
-  
-  Track := _fbplay_internal(0, playstr);
-  if Length(Track) > 0 then
+  for i := 0 to High(AVoices) do
   begin
-    Midi := Midi + 'MTrk' + WriteFourBytes(Length(Track) + 4) + Track + Chr(0) + Chr(255) + Chr(47) + Chr(0);
-    Inc(Tracks);
+    channel := i;
+    if channel >= 9 then
+      Inc(channel);
+    Track := _fbplay_internal(channel, AVoices[i], Tracks = 0);
+    if Length(Track) > 0 then
+    begin
+      Midi := Midi + 'MTrk' + WriteFourBytes(Length(Track) + 4) + Track + Chr(0) + Chr(255) + Chr(47) + Chr(0);
+      Inc(Tracks);
+    end;
   end;
-  
-  Track := _fbplay_internal(1, playstr1);
-  if Length(Track) > 0 then
-  begin
-    Midi := Midi + 'MTrk' + WriteFourBytes(Length(Track) + 4) + Track + Chr(0) + Chr(255) + Chr(47) + Chr(0);
-    Inc(Tracks);
-  end;
-  
+
   Midi := 'MThd' + Chr(0) + Chr(0) + Chr(0) + Chr(6) + Chr(0) + Chr(Ord(Tracks > 1)) + Chr(0) + Chr(Tracks) + Chr(TicksPerQuarter shr 8) + Chr(TicksPerQuarter and 255) + Midi;
-  
+
   F := FileCreate(FFileName);
   if F = -1 then
     raise EInOutError.Create('Cannot create ' + FFileName);
