@@ -21,6 +21,22 @@ O2 L1 C
 
 There are beautiful Bach transcriptions in [samples-beepy](samples-beepy) folder (coming from the [beepy](https://github.com/vdust/beepy) project).
 
+## midi2mml
+
+`midi2mml` does the reverse: it converts a quantized MIDI file into an MML file that `mml2mid` can read.
+
+```bash
+./midi2mml prelude.mid prelude.txt
+./mml2mid prelude.txt prelude-mml.mid
+```
+
+- Times are rounded to 1/48 of a quarter note (covers 64th notes and triplets).
+- The notes of each track are split into monophonic voices (at most 14).
+- The first voice only contains tempo changes (`T`) and rests, because `mml2mid` reads the tempo from the first voice.
+- Since MML has no ties, each note gets the longest MML length (`Ln`, possibly dotted) not exceeding its real duration; voices are played legato (`ML`).
+- Velocities and program changes become `V` and `I` commands.
+- Pitches must stay within `O0`–`O6` (MIDI notes 12 to 95).
+
 ## Compilation
 
 ```bash
